@@ -101,7 +101,7 @@ let screenShake = true;
 let screenFlashes = true;
 let frameRateThrottling = true;
 let slowTintsEnabled = true;
-let optionText = ['Screen Shake','Screen Flashes','Quirks Mode','Experimental Features','Frame Rate Throttling', 'Slow Tints'];
+let optionKeys = ['screenShake','screenFlashes','quirksMode','experimentalFeatures','frameRateThrottling','slowTints'];
 let levelAlreadySharedToExplore = false;
 let lcSavedLevels;
 let nextLevelId;
@@ -111,6 +111,56 @@ let whiteAlpha = 0;
 let coinAlpha = 0;
 let searchParams = new URLSearchParams(window.location.href);
 let [levelId, levelpackId] = [searchParams.get("https://coppersalts.github.io/HTML5b/?level"), searchParams.get("https://coppersalts.github.io/HTML5b/?levelpack")]
+let currentLanguage = 'en-us';
+let availableLanguages = [{code:'en-us',name:'English (US)',author:'5b'}];
+let translations = {};
+let languageListScroll = 0;
+const languageListItemHeight = 40;
+const languageListVisibleCount = 6;
+
+function t(key) {
+	if (translations[key] !== undefined) return translations[key];
+	return key;
+}
+
+function getSavedLanguage() {
+	let saved = bfdia5b.getItem('language');
+	return saved == undefined ? 'en-us' : saved;
+}
+
+async function loadLanguage(lang) {
+	let res = await fetch('i18n/' + lang + '.json');
+	let data = await res.json();
+	translations = data.strings;
+	currentLanguage = lang;
+	bfdia5b.setItem('language', lang);
+	refreshTranslatedArrays();
+}
+
+function refreshTranslatedArrays() {
+	tabNames = [t('tabLevelInfo'), t('tabCharactersObjects'), t('tabTiles'), t('tabBackground'), t('tabDialogue'), t('tabOptions')];
+	exploreTabNames = [t('exploreTabLevels'), t('exploreTabLevelpacks'), t('exploreTabSearch')];
+}
+
+async function loadAvailableLanguages() {
+	let res = await fetch('i18n/languages.json');
+	availableLanguages = await res.json();
+}
+
+async function getLocalizedLevelsPath() {
+	if (currentLanguage === 'en-us') return 'data/levels.txt';
+	let checkReq = await fetch('data/' + currentLanguage + '.txt');
+	if (checkReq.ok) return 'data/' + currentLanguage + '.txt';
+	return 'data/levels.txt';
+}
+
+async function switchLanguage(lang) {
+	await loadLanguage(lang);
+	let levelsPath = await getLocalizedLevelsPath();
+	let req = await fetch(levelsPath);
+	levelsString = await req.text();
+}
+
 const difficultyMap = [
 	["Unknown", "#e6e6e6"],
 	["Easy", "#85ff85"],
@@ -1943,7 +1993,7 @@ const charModels = [
 const names = ['Ruby','Book','Ice Cube','Match','Pencil','Bubble','Lego Brick','Waffle','Tune','','','','','','','','','','','','','','','','','','','','','','','','','','','HPRC 1','HPRC 2','Crate','Metal Box','Platform','Spike Ball','Package','Companian Cube','Rusty Apparatuses','Purple Thing','Saw Blade','Spike Ball Jr.','Pillar','Large Platform','Blue Spike Ball','Green Things','Acid Platform','Large Acid Platform','Green Block','Blue Block','Spike Wall'];
 let selectedTab = 0;
 let selectedBg = 0;
-const tabNames = ['Level Info', 'Characters / Objects', 'Tiles', 'Background', 'Dialogue', 'Options'];
+let tabNames = [t('tabLevelInfo'), t('tabCharactersObjects'), t('tabTiles'), t('tabBackground'), t('tabDialogue'), t('tabOptions')];
 let charInfoHeight = 40;
 let diaInfoHeight = 20;
 const charStateNames = ['', 'Dead', 'Being Recovered', 'Deadly & Moving', 'Moving', 'Deadly', 'Carryable', '', 'Non-Playable Character', 'Rescuable', 'Playable Character'];
@@ -1978,7 +2028,7 @@ let lcZoom = lcZoomFactor;
 let lcPan = [0,0];
 // const exploreTabNames = ['Featured', 'New', 'Top', '🔍'];
 // const exploreTabWidths = [190, 115, 115, 45];
-const exploreTabNames = ['Levels', 'Levelpacks','Search'];
+let exploreTabNames = [t('exploreTabLevels'), t('exploreTabLevelpacks'), t('exploreTabSearch')];
 const exploreTabWidths = [125, 200, 125];
 let power = 1;
 let jumpPower = 11;
@@ -2246,9 +2296,12 @@ async function loadingScreen() {
 	ctx.textAlign = 'center';
 	ctx.textBaseline = 'middle';
 	ctx.font = '30px Helvetica';
-	ctx.fillText('Loading...', cwidth / 2, cheight / 2);
+	ctx.fillText(t('loading'), cwidth / 2, cheight / 2);
 
-	let req = await fetch('data/levels.txt');
+	await loadAvailableLanguages();
+	await loadLanguage(getSavedLanguage());
+	let levelsPath = await getLocalizedLevelsPath();
+	let req = await fetch(levelsPath);
 	levelsString = await req.text();
 	loadLevels();
 
@@ -2948,24 +3001,24 @@ function drawMenu() {
 	ctx.textAlign = 'left';
 	ctx.font = '20px Helvetica';
 
-	if (levelProgress > 99) drawMenu0Button('WATCH BFDIA 5c', 665.55, 303.75, false, menuWatchC);
-	else drawMenu0Button('WATCH BFDIA 5a', 665.55, 303.75, false, menuWatchA);
+	if (levelProgress > 99) drawMenu0Button(t('watchBfdia5c'), 665.55, 303.75, false, menuWatchC);
+	else drawMenu0Button(t('watchBfdia5a'), 665.55, 303.75, false, menuWatchA);
 	if (showingNewGame2) {
 		drawRoundedRect('#ffffff', 665.5, 81, 273, 72.95, 15);
 		ctx.font = '20px Helvetica';
 		ctx.fillStyle = '#666666';
 		ctx.textAlign = 'center';
 		ctx.textBaseline = 'top';
-		linebreakText('Are you sure you want to\nerase your saved progress\nand start a new game?', 802, 84.3, 22);
-		drawNewGame2Button('YES', 680.4, 169.75, '#993333', menuNewGame2yes);
-		drawNewGame2Button('NO', 815.9, 169.75, '#1a4d1a', menuNewGame2no);
+		linebreakText(t('eraseProgressConfirm'), 802, 84.3, 22);
+		drawNewGame2Button(t('yes'), 680.4, 169.75, '#993333', menuNewGame2yes);
+		drawNewGame2Button(t('no'), 815.9, 169.75, '#1a4d1a', menuNewGame2no);
 	} else {
-		drawMenu0Button('OPTIONS', 665.55, 259.1, false, menuOptions);
-		drawMenu0Button('NEW GAME', 665.55, 348.4, false, menuNewGame);
+		drawMenu0Button(t('options'), 665.55, 259.1, false, menuOptions);
+		drawMenu0Button(t('newGame'), 665.55, 348.4, false, menuNewGame);
 	}
-	drawMenu0Button('CONTINUE GAME', 665.55, 393.05, levelProgress == 0, menuContGame);
-	drawMenu0Button('LEVEL CREATOR', 665.55, 437.7, false, menuLevelCreator);
-	drawMenu0Button('EXPLORE', 665.55, 482.5, false, menuExplore);
+	drawMenu0Button(t('continueGame'), 665.55, 393.05, levelProgress == 0, menuContGame);
+	drawMenu0Button(t('levelCreator'), 665.55, 437.7, false, menuLevelCreator);
+	drawMenu0Button(t('explore'), 665.55, 482.5, false, menuExplore);
 
 	// let started = true;
 	// if (bfdia5b.data.levelProgress == undefined || bfdia5b.data.levelProgress == 0) {
@@ -3017,14 +3070,14 @@ function drawLevelMap() {
 
 	if (!playingLevelpack) {
 		ctx.font = 'bold 115px Arial';
-		ctx.fillText('5b', 47, 23);
+		ctx.fillText(t('gameTitle5b'), 47, 23);
 		ctx.font = '48px Helvetica';
-		ctx.fillText('Level', 211, 30);
-		ctx.fillText('Select', 211, 80);
+		ctx.fillText(t('levelLabel'), 211, 30);
+		ctx.fillText(t('selectLabel'), 211, 80);
 
 		ctx.drawImage(svgTiles[12], 398.5, 34.5, 73, 73);
 		ctx.font = '40px Helvetica';
-		ctx.fillText('x ' + coins, 477.95, 50.9);
+		ctx.fillText(t('coinsPrefix') + coins, 477.95, 50.9);
 	} else {
 		ctx.font = 'bold 48px Helvetica';
 		// ctx.fillText(exploreLevelPageLevel.title, 55, 35);
@@ -3034,26 +3087,26 @@ function drawLevelMap() {
 			const username = isGuest ? "Guest" : exploreLevelPageLevel.creator.username;
 			
 			ctx.font = 'italic 21px Helvetica';
-			ctx.fillText('by ' + username, 50, 32 + titleLineCount*48);
+			ctx.fillText(t('byPrefix') + username, 50, 32 + titleLineCount*48);
 		}
 
 		ctx.drawImage(svgTiles[12], 568.5, 29.5, 50, 50);
 		ctx.font = '21px Helvetica';
-		ctx.fillText('x ' + coins, 627.95, 45.9);
+		ctx.fillText(t('coinsPrefix') + coins, 627.95, 45.9);
 	}
 
 	ctx.font = '21px Helvetica';
 	ctx.fillText(toHMS(timer), 767.3, 27.5);
 	ctx.fillText(deathCount.toLocaleString(), 767.3, 55.9);
 	ctx.textAlign = 'right';
-	ctx.fillText('Time:', 757.05, 27.5);
-	ctx.fillText('Deaths:', 757.05, 55.9);
+	ctx.fillText(t('timeLabel'), 757.05, 27.5);
+	ctx.fillText(t('deathsLabel'), 757.05, 55.9);
 	if (levelProgress > 0) {
 		ctx.font = '14px Helvetica';
 		ctx.textAlign = 'right';
-		ctx.fillText('Minimal deaths to complete level ' + levelProgress + ':', 756.3, 90.5);
+		ctx.fillText(t('minimalDeathsToComplete') + levelProgress + ':', 756.3, 90.5);
 		ctx.font = '21px Helvetica';
-		ctx.fillText('Unnecessary deaths:', 756.3, 116.8);
+		ctx.fillText(t('unnecessaryDeaths'), 756.3, 116.8);
 		ctx.textAlign = 'left';
 		ctx.fillText(mdao[levelProgress - 1], 767.3, 85.4);
 		ctx.fillText((deathCount - mdao[levelProgress - 1]).toLocaleString(), 767.3, 116.8);
@@ -5692,7 +5745,7 @@ function drawLCCharInfo(i, y) {
 			onRect(_xmouse, _ymouse + charsTabScrollBar, 665, y + charInfoHeight, charInfoHeight, diaInfoHeight)
 		) {
 			onButton = true;
-			hoverText = 'Movement Speed';
+			hoverText = t('hoverMovementSpeed');
 			if (mouseIsDown && !pmouseIsDown) {
 				setUndo();
 				charDropdown = -i - 3;
@@ -5740,7 +5793,7 @@ function drawLCCharInfo(i, y) {
 				) {
 					if (_xmouse < 665 + charInfoHeight * 1.5) {
 						onButton = true;
-						hoverText = 'Direction';
+						hoverText = t('hoverDirection');
 						if (mouseIsDown && !pmouseIsDown) {
 							setUndo();
 							charDropdown = -i - 3;
@@ -5749,7 +5802,7 @@ function drawLCCharInfo(i, y) {
 						}
 					} else if (_xmouse < 665 + charInfoHeight + 100 - charInfoHeight) {
 						onButton = true;
-						hoverText = 'Block Count';
+						hoverText = t('hoverBlockCount');
 						if (mouseIsDown && !pmouseIsDown) {
 							setUndo();
 							charDropdown = -i - 3;
@@ -5795,7 +5848,7 @@ function drawLCCharInfo(i, y) {
 						3
 					);
 					onButton = true;
-					hoverText = 'Insert Into Path';
+					hoverText = t('hoverInsertIntoPath');
 					if (mouseIsDown && !pmouseIsDown) {
 						setUndo();
 						myLevelChars[1][i][5].splice(j, 0, [0, 1]);
@@ -5825,7 +5878,7 @@ function drawLCCharInfo(i, y) {
 						)
 					) {
 						onButton = true;
-						hoverText = 'Add to Path';
+						hoverText = t('hoverAddToPath');
 						if (mouseIsDown && !pmouseIsDown) {
 							setUndo();
 							myLevelChars[1][i][5].push([0, 1]);
@@ -5905,7 +5958,7 @@ function drawLCCharInfo(i, y) {
 			// ctx.fillRect(665+240, y + charInfoHeight/2 - 10, 20, 20);
 			if (onRect(_xmouse, _ymouse + charsTabScrollBar, 665, y, charInfoHeight, charInfoHeight)) {
 				onButton = true;
-				hoverText = 'ID';
+				hoverText = t('hoverId');
 				if (mouseIsDown && !pmouseIsDown) {
 					setUndo();
 					charDropdown = -i - 3;
@@ -5922,14 +5975,14 @@ function drawLCCharInfo(i, y) {
 				)
 			) {
 				onButton = true;
-				hoverText = 'State';
+				hoverText = t('hoverState');
 				if (mouseIsDown && !pmouseIsDown) {
 					charDropdown = -i - 3;
 					charDropdownType = 1;
 				}
 			} else if (_xmouse < 665 + 240) {
 				onButton = true;
-				hoverText = 'Start Location';
+				hoverText = t('hoverStartLocation');
 				if (mouseIsDown && !pmouseIsDown) {
 					setUndo();
 					charDropdown = -i - 3;
@@ -5996,7 +6049,7 @@ function drawLCDiaInfo(i, y) {
 		ctx.font = diaInfoHeight + 'px Helvetica';
 		ctx.textAlign = 'left';
 		ctx.textBaseline = 'top';
-		ctx.fillText('lever switch', 665 + diaInfoHeight * 3 + 5, y);
+		ctx.fillText(t('leverSwitch'), 665 + diaInfoHeight * 3 + 5, y);
 	} else {
 		textBoxes[1][i].y = y;
 		textBoxes[1][i].draw();
@@ -6050,7 +6103,7 @@ function drawLCDiaInfo(i, y) {
 			// ctx.fillRect(665+240, y + (diaInfoHeight*myLevelDialogue[1][i].linecount)/2 - 10, 20, 20);
 			if (onRect(_xmouse,_ymouse,665,y,diaInfoHeight * 2,diaInfoHeight * myLevelDialogue[1][i].linecount)) {
 				onButton = true;
-				hoverText = 'Character';
+				hoverText = t('hoverCharacter');
 				dialogueTabCharHover = [i,y];
 				if (mouseIsDown && !pmouseIsDown) {
 					diaDropdown = -i - 3;
@@ -7004,7 +7057,7 @@ function drawExploreLevel(x, y, i, levelType, pageType) {
 		const username = isGuest ? "Guest" : thisExploreLevel.creator.username;
 		ctx.fillStyle = '#999999';
 		ctx.font = '10px Helvetica';
-		ctx.fillText('by ' + username, x + 7, y + 138.3);
+		ctx.fillText(t('byPrefix') + username, x + 7, y + 138.3);
 
 
 		// Plays icon & counter
@@ -7166,7 +7219,7 @@ function drawExploreLoadingText() {
 	ctx.textAlign = 'center';
 	ctx.textBaseline = 'middle';
 	ctx.fillStyle = '#ffffff';
-	ctx.fillText('loading...', cwidth / 2, cheight / 2);
+	ctx.fillText(t('loadingLower'), cwidth / 2, cheight / 2);
 }
 
 function drawArrow(x, y, w, h, dir) {
@@ -7670,7 +7723,7 @@ function setup() {
 				rAF60fps();
 			})
 			.catch((e) => {
-				alert("Unable to find level!", e);
+				alert(t('unableToFindLevel'));
 				console.error(e);
 			});
 	} else if (levelpackId) {
@@ -7685,7 +7738,7 @@ function setup() {
 				rAF60fps();
 			})
 			.catch((e) => {
-				alert("Unable to find levelpack!", e);
+				alert(t('unableToFindLevelpack'));
 				console.error(e);
 			});
 	} else {
@@ -7708,7 +7761,7 @@ function draw() {
 	switch (menuScreen) {
 		case -1:
 			ctx.drawImage(preMenuBG, 0, 0, cwidth, cheight);
-			drawMenu0Button('START GAME', (cwidth - menu0ButtonSize.w) / 2, (cheight - menu0ButtonSize.h) / 2, false, playGame);
+			drawMenu0Button(t('startGame'), (cwidth - menu0ButtonSize.w) / 2, (cheight - menu0ButtonSize.h) / 2, false, playGame);
 			break;
 
 		case 0:
@@ -8437,8 +8490,8 @@ function draw() {
 					ctx.textBaseline = 'top';
 					ctx.font = '18px Helvetica';
 					ctx.fillStyle = '#000000';
-					ctx.fillText('Name:', 770, tabWindowY + 10);
-					ctx.fillText('Description:', 770, tabWindowY + 60);
+					ctx.fillText(t('nameLabel'), 770, tabWindowY + 10);
+					ctx.fillText(t('descriptionLabel'), 770, tabWindowY + 60);
 
 					textBoxes[0][0].y = tabWindowY + 10;
 					textBoxes[0][1].y = tabWindowY + 60;
@@ -8456,7 +8509,7 @@ function draw() {
 					ctx.textAlign = 'center';
 					ctx.textBaseline = 'bottom';
 					ctx.font = '21px Helvetica';
-					ctx.fillText('Necessary Deaths:', 660 + (cwidth - 660) / 2, tabWindowY + 317);
+					ctx.fillText(t('necessaryDeathsLabel'), 660 + (cwidth - 660) / 2, tabWindowY + 317);
 					ctx.font = '25px Helvetica';
 					let necessaryDeathsW = 100;
 					ctx.fillStyle = '#808080';
@@ -8583,7 +8636,7 @@ function draw() {
 					) {
 						if (myLevelChars[1].length < 50) {
 							onButton = true;
-							hoverText = 'Add New Character or Object';
+							hoverText = t('hoverAddNewCharacterOrObject');
 							if (mouseIsDown && !pmouseIsDown) {
 								duplicateChar = false;
 								reorderCharUp = false;
@@ -8629,7 +8682,7 @@ function draw() {
 					) {
 						if (myLevelChars[1].length < 50) {
 							onButton = true;
-							hoverText = 'Duplicate Character or Object';
+							hoverText = t('hoverDuplicateCharacterOrObject');
 							if (mouseIsDown && !pmouseIsDown) {
 								reorderCharUp = false;
 								reorderCharDown = false;
@@ -8652,7 +8705,7 @@ function draw() {
 					) {
 						if (myLevelChars[1].length < 50) {
 							onButton = true;
-							hoverText = 'Move Character or Object Up';
+							hoverText = t('hoverMoveCharacterOrObjectUp');
 							if (mouseIsDown && !pmouseIsDown) {
 								duplicateChar = false;
 								reorderCharDown = false;
@@ -8675,7 +8728,7 @@ function draw() {
 					) {
 						if (myLevelChars[1].length < 50) {
 							onButton = true;
-							hoverText = 'Move Character or Object Down';
+							hoverText = t('hoverMoveCharacterOrObjectDown');
 							if (mouseIsDown && !pmouseIsDown) {
 								duplicateChar = false;
 								reorderCharUp = false;
@@ -9137,7 +9190,7 @@ function draw() {
 					addButtonPressed = false;
 					if (!lcPopUp && onRect(_xmouse,_ymouse,660 + 5,cheight - (tabNames.length - selectedTab - 1) * tabHeight - 20,15,15)) {
 						onButton = true;
-						hoverText = 'Add New Dialogue Line';
+						hoverText = t('hoverAddNewDialogueLine');
 						if (mouseIsDown && !pmouseIsDown) {
 							reorderDiaDown = false;
 							reorderDiaUp = false;
@@ -9152,7 +9205,7 @@ function draw() {
 					if (!lcPopUp && onRect(_xmouse,_ymouse,660 + 25,cheight - (tabNames.length - selectedTab - 1) * tabHeight - 20,15,15)) {
 						if (myLevelChars[1].length < 50) {
 							onButton = true;
-							hoverText = 'Move Dialogue Line Up';
+							hoverText = t('hoverMoveDialogueLineUp');
 							if (mouseIsDown && !pmouseIsDown) {
 								reorderDiaDown = false;
 								reorderDiaUp = true;
@@ -9166,7 +9219,7 @@ function draw() {
 					if (!lcPopUp && onRect(_xmouse,_ymouse,660 + 45,cheight - (tabNames.length - selectedTab - 1) * tabHeight - 20,15,15)) {
 						if (myLevelChars[1].length < 50) {
 							onButton = true;
-							hoverText = 'Move Dialogue Line Down';
+							hoverText = t('hoverMoveDialogueLineDown');
 							if (mouseIsDown && !pmouseIsDown) {
 								reorderDiaUp = false;
 								reorderDiaDown = true;
@@ -9222,21 +9275,21 @@ function draw() {
 				case 5:
 					// Options
 					ctx.font = '23px Helvetica';
-					if (drawSimpleButton('Copy String', copyLevelString, 675, tabWindowY + 10, 130, 30, 3, '#ffffff', '#404040', '#666666', '#555555').hover) copyButton = 1;
-					drawSimpleButton('Load String', openLevelLoader, 815, tabWindowY + 10, 130, 30, 3, '#ffffff', '#404040', '#666666', '#555555');
-					drawSimpleButton('Test Level', testLevelCreator, 675, tabWindowY + 50, 130, 30, 3, '#ffffff', '#404040', '#666666', '#555555');
+					if (drawSimpleButton(t('copyString'), copyLevelString, 675, tabWindowY + 10, 130, 30, 3, '#ffffff', '#404040', '#666666', '#555555').hover) copyButton = 1;
+					drawSimpleButton(t('loadString'), openLevelLoader, 815, tabWindowY + 10, 130, 30, 3, '#ffffff', '#404040', '#666666', '#555555');
+					drawSimpleButton(t('testLevel'), testLevelCreator, 675, tabWindowY + 50, 130, 30, 3, '#ffffff', '#404040', '#666666', '#555555');
 					// if (enableExperimentalFeatures) {
 					let isNew = lcCurrentSavedLevel==-1;
 					if (!isNew) ctx.font = '18px Helvetica';
 					drawSimpleButton(isNew?'Save Level':'Save Changes', saveLevelCreator, 675, tabWindowY + 90, 130, 30, isNew?3:5, '#ffffff', '#404040', '#666666', '#555555', {enabled:lcChangesMade});
 					ctx.font = '23px Helvetica';
-					drawSimpleButton('Save Copy', saveLevelCreatorCopy, 815, tabWindowY + 90, 130, 30, 3, '#ffffff', '#404040', '#666666', '#555555', {enabled:!isNew});
-					drawSimpleButton('New Blank Level', resetLevelCreatorChoice, 675, tabWindowY + 130, 270, 30, 3, '#ffffff', '#404040', '#666666', '#555555');
-					drawSimpleButton('My Levels', menuMyLevels, 675, tabWindowY + 170, 270, 30, 3, '#ffffff', '#404040', '#666666', '#555555');
+					drawSimpleButton(t('saveCopy'), saveLevelCreatorCopy, 815, tabWindowY + 90, 130, 30, 3, '#ffffff', '#404040', '#666666', '#555555', {enabled:!isNew});
+					drawSimpleButton(t('newBlankLevel'), resetLevelCreatorChoice, 675, tabWindowY + 130, 270, 30, 3, '#ffffff', '#404040', '#666666', '#555555');
+					drawSimpleButton(t('myLevels'), menuMyLevels, 675, tabWindowY + 170, 270, 30, 3, '#ffffff', '#404040', '#666666', '#555555');
 					// }
 
 					drawSimpleButton(loggedInExploreUser5beamID ? 'Share to Explore' : 'Share to Explore as Guest', shareToExplore, 675, tabWindowY + 210, 270, 30, 3, '#ffffff', '#404040', '#666666', '#555555');
-					drawMenu0Button('EXIT', 846, cheight - 50, false, menuExitLevelCreator, 100);
+					drawMenu0Button(t('exit'), 846, cheight - 50, false, menuExitLevelCreator, 100);
 					// drawMenu2_3Button(0, 837.5, 486.95, menuExitLevelCreator);
 					break;
 			}
@@ -9796,7 +9849,7 @@ function draw() {
 
 				let sortingText = exploreSortText[exploreSort][0].toLocaleUpperCase() + exploreSortText[exploreSort].slice(1)
 				ctx.fillText(sortingText, 650, 88);
-				ctx.fillText('Play the Daily!', 992-exploreSortTextWidth + 5, 88);
+				ctx.fillText(t('playTheDaily'), 992-exploreSortTextWidth + 5, 88);
 			}
 			// Page number
 			ctx.fillStyle = '#ffffff';
@@ -9825,9 +9878,9 @@ function draw() {
 			drawMenu2_3Button(1, 837.5, 486.95, menu2Back);
 			// if (enableExperimentalFeatures) drawMenu2_3Button(2, 10, 486.95, logInExplore);
 			if (loggedInExploreUser5beamID === -1) {
-				drawMenu0Button('LOG IN', 540, 20, false, logInExplore, 120);
+				drawMenu0Button(t('logIn'), 540, 20, false, logInExplore, 120);
 			} else {
-				drawMenu0Button('LOG OUT', 520, 20, false, logOutExplore, 150);
+				drawMenu0Button(t('logOut'), 520, 20, false, logOutExplore, 150);
 			}
 			break;
 
@@ -9847,7 +9900,7 @@ function draw() {
 				ctx.textAlign = 'left';
 				ctx.fillStyle = '#b0b0b0';
 				ctx.font = '18px Helvetica';
-				ctx.fillText('by ' + username, 31.85, 68);
+				ctx.fillText(t('byPrefix') + username, 31.85, 68);
 
 				let lineCount = 0;
 				let showImpossibleNotice = false;
@@ -9885,7 +9938,7 @@ function draw() {
 
 				ctx.fillStyle = '#333333';
 				ctx.font = 'italic 18px Helvetica';
-				ctx.fillText('created ' + exploreLevelPageLevel.created.slice(0,10), 31.85, 325);
+				ctx.fillText(t('createdPrefix') + exploreLevelPageLevel.created.slice(0,10), 31.85, 325);
 
 				ctx.fillStyle = '#666666';
 				ctx.fillRect(424, 428, cwidth-424, cheight-428);
@@ -9946,7 +9999,7 @@ function draw() {
 					ctx.closePath();
 					ctx.fill();
 
-					ctx.fillText(difficultyMap[exploreLevelPageLevel.difficulty][0], 54, 352);
+					ctx.fillText(t('difficulty_' + difficultyMap[exploreLevelPageLevel.difficulty][0]), 54, 352);
 				}
 
 				ctx.drawImage(thumbBig, 30, 98, 384, 216);
@@ -9974,20 +10027,20 @@ function draw() {
 					drawSimpleButton(exploreLevelPageType===0?'Play Level':'New Game', playExploreLevel===0?playExploreLevel:openExploreNewGame2, 30, 379, 188, 30, 3, '#ffffff', '#404040', '#808080', '#808080');
 
 					if (exploreLevelPageType != 0) {
-						drawSimpleButton('Continue Game', continueExploreLevelpack, 30, 417, 188, 30, 3, '#ffffff', '#404040', '#808080', '#808080', {enabled:typeof levelpackProgress[exploreLevelPageLevel.id] !== 'undefined'});
+						drawSimpleButton(t('continueGame'), continueExploreLevelpack, 30, 417, 188, 30, 3, '#ffffff', '#404040', '#808080', '#808080', {enabled:typeof levelpackProgress[exploreLevelPageLevel.id] !== 'undefined'});
 					}
 				} else {
-					drawSimpleButton('Yes', exploreNewGame2yes, 30, 417, 90, 30, 3, '#ffffff', '#404040', '#808080', '#808080');
-					drawSimpleButton('No', exploreNewGame2no, 128, 417, 90, 30, 3, '#ffffff', '#404040', '#808080', '#808080');
+					drawSimpleButton(t('yes'), exploreNewGame2yes, 30, 417, 90, 30, 3, '#ffffff', '#404040', '#808080', '#808080');
+					drawSimpleButton(t('no'), exploreNewGame2no, 128, 417, 90, 30, 3, '#ffffff', '#404040', '#808080', '#808080');
 					ctx.fillStyle ='#ffffff';
 					ctx.textBaseline = 'middle';
-					ctx.fillText('Are you sure?', 124, 396);
+					ctx.fillText(t('areYouSure'), 124, 396);
 				}
 
-				if (drawSimpleButton('Copy Link', exploreCopyLink, 226, 379, 188, 30, 3, '#ffffff', '#404040', '#808080', '#808080').hover) copyButton = 3;
+				if (drawSimpleButton(t('copyLink'), exploreCopyLink, 226, 379, 188, 30, 3, '#ffffff', '#404040', '#808080', '#808080').hover) copyButton = 3;
 
 				if (!isGuest) {
-					drawSimpleButton('More By This User', exploreMoreByThisUser, 226, 417, 188, 30, 3, '#ffffff', '#404040', '#808080', '#808080');
+					drawSimpleButton(t('moreByThisUser'), exploreMoreByThisUser, 226, 417, 188, 30, 3, '#ffffff', '#404040', '#808080', '#808080');
 				}
 
 				if (loggedInExploreUser5beamID !== -1) {
@@ -9998,7 +10051,7 @@ function draw() {
 				if (exploreLevelPageType != 1 && loggedInExploreUser5beamID === exploreLevelPageLevel.creator.id) {
 					drawSimpleButton(editingExploreLevel?'Save Changes':'Edit', editExploreLevel, 226, 455, 188, 30, 3, '#ffffff', '#404040', '#808080', '#808080');
 					if (editingExploreLevel) {
-						drawSimpleButton('Cancel', cancelEditExploreLevel, 226, 493, 188, 30, 3, '#ffffff', '#404040', '#808080', '#808080');
+						drawSimpleButton(t('cancel'), cancelEditExploreLevel, 226, 493, 188, 30, 3, '#ffffff', '#404040', '#808080', '#808080');
 						;
 					}
 				}
@@ -10053,8 +10106,8 @@ function draw() {
 					// levelLoadString = textBoxes[0][3].text;
 
 					ctx.font = '18px Helvetica';
-					drawSimpleButton('Save', confirmChangeLevelString, (cwidth - lcPopUpW) / 2 + lcPopUpW - 70, (cheight + lcPopUpH) / 2 - 40, 60, 30, 3, '#ffffff', '#00a0ff', '#40a0ff', '#40a0ff', {isOnPopUp:true});
-					drawSimpleButton('Cancel', cancelChangeLevelString, (cwidth - lcPopUpW) / 2 + lcPopUpW - 140, (cheight + lcPopUpH) / 2 - 40, 60, 30, 3, '#ffffff', '#a0a0a0', '#a0a0a0', '#a0a0a0', {isOnPopUp:true});
+					drawSimpleButton(t('save'), confirmChangeLevelString, (cwidth - lcPopUpW) / 2 + lcPopUpW - 70, (cheight + lcPopUpH) / 2 - 40, 60, 30, 3, '#ffffff', '#00a0ff', '#40a0ff', '#40a0ff', {isOnPopUp:true});
+					drawSimpleButton(t('cancel'), cancelChangeLevelString, (cwidth - lcPopUpW) / 2 + lcPopUpW - 140, (cheight + lcPopUpH) / 2 - 40, 60, 30, 3, '#ffffff', '#a0a0a0', '#a0a0a0', '#a0a0a0', {isOnPopUp:true});
 				}
 			}
 
@@ -10085,7 +10138,7 @@ function draw() {
 					ctx.textAlign = 'left';
 					ctx.fillStyle = '#ffffff';
 					ctx.font = '25px Helvetica';
-					ctx.fillText(j==0?'Levels':'Levelpacks', 55, y-3);
+					ctx.fillText(j==0?t('exploreTabLevels'):t('exploreTabLevelpacks'), 55, y-3);
 
 					// Previous page button
 					if (exploreUserPageNumbers[j] <= 0.5 || exploreLoading) ctx.fillStyle = '#505050';
@@ -10122,13 +10175,13 @@ function draw() {
 			ctx.textBaseline = 'top';
 			ctx.font = '26px Helvetica';
 
-			for (var i = 0; i < optionText.length; i++) {
+			for (var i = 0; i < optionKeys.length; i++) {
 				let y = i*50 + 150;
 				ctx.fillStyle = '#444444';
 				ctx.fillRect(590, y, 50, 28);
 				ctx.fillStyle = '#ffffff';
 				ctx.textAlign = 'right';
-				ctx.fillText(optionText[i], 580, y+2);
+				ctx.fillText(t('option_' + optionKeys[i]), 580, y+2);
 				ctx.textAlign = 'center';
 				let thisOptionValue;
 				switch (i) {
@@ -10151,7 +10204,7 @@ function draw() {
 						thisOptionValue = slowTintsEnabled;
 				}
 				ctx.fillStyle = thisOptionValue?'#00ff00':'#ff0000';
-				ctx.fillText(thisOptionValue?'on':'off', 615, y+2);
+				ctx.fillText(thisOptionValue?t('on'):t('off'), 615, y+2);
 
 				if (onRect(_xmouse, _ymouse, 590, y, 50, 28)) {
 					onButton = true;
@@ -10180,6 +10233,47 @@ function draw() {
 				}
 			}
 
+			ctx.save();
+			ctx.beginPath();
+			ctx.rect(20, 150, 260, languageListVisibleCount * languageListItemHeight);
+			ctx.clip();
+			for (var li = 0; li < availableLanguages.length; li++) {
+				let ly = 150 + li * languageListItemHeight - languageListScroll;
+				if (ly + languageListItemHeight < 150 || ly > 150 + languageListVisibleCount * languageListItemHeight) continue;
+				let langFill = '#444444';
+				if (availableLanguages[li].code === currentLanguage) langFill = '#1a4d1a';
+				if (onRect(_xmouse, _ymouse, 20, ly, 260, languageListItemHeight - 4)) {
+					onButton = true;
+					langFill = '#666666';
+					if (mouseIsDown && !pmouseIsDown && availableLanguages[li].code !== currentLanguage) switchLanguage(availableLanguages[li].code);
+				}
+				ctx.fillStyle = langFill;
+				ctx.fillRect(20, ly, 260, languageListItemHeight - 4);
+				ctx.fillStyle = '#ffffff';
+				ctx.textAlign = 'left';
+				ctx.font = '18px Helvetica';
+				ctx.fillText(availableLanguages[li].name, 28, ly + 6);
+				ctx.font = '12px Helvetica';
+				ctx.fillStyle = '#999999';
+				ctx.fillText(availableLanguages[li].author, 28, ly + 26);
+			}
+			ctx.restore();
+			if (availableLanguages.length > languageListVisibleCount) {
+				let maxScroll = (availableLanguages.length - languageListVisibleCount) * languageListItemHeight;
+				if (onRect(_xmouse, _ymouse, 20, 108, 25, 30)) {
+					onButton = true;
+					ctx.fillStyle = '#cccccc';
+					if (mouseIsDown && !pmouseIsDown) languageListScroll = Math.max(languageListScroll - languageListItemHeight, 0);
+				} else ctx.fillStyle = '#999999';
+				drawArrow(20, 108, 25, 30, 0);
+				if (onRect(_xmouse, _ymouse, 255, 108, 25, 30)) {
+					onButton = true;
+					ctx.fillStyle = '#cccccc';
+					if (mouseIsDown && !pmouseIsDown) languageListScroll = Math.min(languageListScroll + languageListItemHeight, maxScroll);
+				} else ctx.fillStyle = '#999999';
+				drawArrow(255, 108, 25, 30, 2);
+			}
+
 			drawMenu2_3Button(1, 837.5, 486.95, menuExitOptions);
 			break;
 
@@ -10195,13 +10289,13 @@ function draw() {
 				ctx.textAlign = 'left';
 				ctx.textBaseline = 'bottom';
 				ctx.fillStyle = '#ffffff';
-				ctx.fillText('Select a level to add', 28, 55);
+				ctx.fillText(t('selectLevelToAdd'), 28, 55);
 			} else {
 				ctx.font = '26px Helvetica';
 				ctx.textAlign = 'right';
 				ctx.textBaseline = 'bottom';
 				ctx.fillStyle = '#ffffff';
-				ctx.fillText(deletingMyLevels?'click the trash can to exit delete mode':'click on a level or levelpack to edit it', cwidth-28, 60);
+				ctx.fillText(deletingMyLevels?t('clickTrashToExitDelete'):t('clickToEditLevelOrLevelpack'), cwidth-28, 60);
 
 				// Tabs
 				ctx.font = 'bold 35px Helvetica';
@@ -10231,7 +10325,7 @@ function draw() {
 				if (myLevelsTab === 1) {
 					// create levelpack button
 					ctx.font = '23px Helvetica';
-					drawSimpleButton('', createNewLevelpack, 68, 85, 30, 30, 3, '#ffffff', '#00a0ff', '#40a0ff', '#40a0ff', {alt:'Create new levelpack'});
+					drawSimpleButton('', createNewLevelpack, 68, 85, 30, 30, 3, '#ffffff', '#00a0ff', '#40a0ff', '#40a0ff', {alt:t('altCreateNewLevelpack')});
 					ctx.drawImage(svgMyLevelsIcons[1], 68, 85, svgMyLevelsIcons[1].width/scaleFactor, svgMyLevelsIcons[1].height/scaleFactor);
 				}
 			}
@@ -10284,8 +10378,8 @@ function draw() {
 					ctx.textAlign = 'left';
 					wrapText((myLevelsTab===0)?('Are you sure you want to delete the level "' + lcSavedLevels[levelToDelete].title):('Are you sure you want to delete the levelpack "' + lcSavedLevelpacks[levelToDelete].title) + '"? This action can not be undone.', (cwidth - lcPopUpW) / 2 + 10, (cheight - lcPopUpH) / 2 + 5, lcPopUpW - 20, 22);
 
-					drawSimpleButton('Cancel', cancelDeleteLevel, cwidth/2 - 125, (cheight + lcPopUpH) / 2 - 40, 100, 30, 3, '#ffffff', '#a0a0a0', '#c0c0c0', '#c0c0c0', {isOnPopUp:true});
-					drawSimpleButton('Delete', confirmDeleteLevel, cwidth/2 + 25, (cheight + lcPopUpH) / 2 - 40, 100, 30, 3, '#ffffff', '#ff0000', '#ff8080', '#ffa0a0', {isOnPopUp:true});
+					drawSimpleButton(t('cancel'), cancelDeleteLevel, cwidth/2 - 125, (cheight + lcPopUpH) / 2 - 40, 100, 30, 3, '#ffffff', '#a0a0a0', '#c0c0c0', '#c0c0c0', {isOnPopUp:true});
+					drawSimpleButton(t('delete'), confirmDeleteLevel, cwidth/2 + 25, (cheight + lcPopUpH) / 2 - 40, 100, 30, 3, '#ffffff', '#ff0000', '#ff8080', '#ffa0a0', {isOnPopUp:true});
 				}
 				else if (lcPopUpType == 2) {
 						let lcPopUpW = 400;
@@ -10384,24 +10478,24 @@ function draw() {
 			textBoxes[0][0].draw();
 			lcSavedLevelpacks['l' + lcCurrentSavedLevelpack].title = textBoxes[0][0].text;
 			if (wasEditingBefore && !editingTextBox) saveMyLevelpacks();
-			drawSimpleButton('', openEditLevelpackDescriptionDialog, 877, 15, 55, 55, 3, '#ffffff', '#333333', '#404040', '#404040', {alt:'Remove levels'});
+			drawSimpleButton('', openEditLevelpackDescriptionDialog, 877, 15, 55, 55, 3, '#ffffff', '#333333', '#404040', '#404040', {alt:t('altRemoveLevels')});
 			ctx.drawImage(svgMyLevelsIcons[1], 877, 15, 55, 55);
 
 
-			drawSimpleButton('', toggleLevelpackCreatorRemovingLevels, 28, 85, 30, 30, 3, '#ffffff', '#ff0000', '#ff4040', '#ff4040', {alt:'Remove levels'});
+			drawSimpleButton('', toggleLevelpackCreatorRemovingLevels, 28, 85, 30, 30, 3, '#ffffff', '#ff0000', '#ff4040', '#ff4040', {alt:t('altRemoveLevels')});
 			ctx.drawImage(svgMyLevelsIcons[0], 28, 85, svgMyLevelsIcons[0].width/scaleFactor, svgMyLevelsIcons[0].height/scaleFactor);
 
-			drawSimpleButton('', openAddLevelsToLevelpackScreen, 68, 85, 30, 30, 3, '#ffffff', '#00a0ff', '#40a0ff', '#40a0ff', {alt:'Add levels'});
+			drawSimpleButton('', openAddLevelsToLevelpackScreen, 68, 85, 30, 30, 3, '#ffffff', '#00a0ff', '#40a0ff', '#40a0ff', {alt:t('altAddLevels')});
 			ctx.drawImage(svgMyLevelsIcons[1], 68, 85, svgMyLevelsIcons[1].width/scaleFactor, svgMyLevelsIcons[1].height/scaleFactor);
 
-			if (drawSimpleButton('', copySavedLevelpackString, 108, 85, 30, 30, 3, '#ffffff', '#00a0ff', '#40a0ff', '#40a0ff', {alt:'Copy levelpack string'}).hover) copyButton = 2;
+			if (drawSimpleButton('', copySavedLevelpackString, 108, 85, 30, 30, 3, '#ffffff', '#00a0ff', '#40a0ff', '#40a0ff', {alt:t('altCopyLevelpackString')}).hover) copyButton = 2;
 			ctx.drawImage(svgMyLevelsIcons[2], 108, 85, svgMyLevelsIcons[2].width/scaleFactor, svgMyLevelsIcons[2].height/scaleFactor);
 
-			drawSimpleButton('', playSavedLevelpack, 148, 85, 30, 30, 3, '#ffffff', '#00a0ff', '#40a0ff', '#40a0ff', {alt:'Play levelpack'});
+			drawSimpleButton('', playSavedLevelpack, 148, 85, 30, 30, 3, '#ffffff', '#00a0ff', '#40a0ff', '#40a0ff', {alt:t('altPlayLevelpack')});
 			ctx.drawImage(svgMyLevelsIcons[4], 148, 85, svgMyLevelsIcons[4].width/scaleFactor, svgMyLevelsIcons[4].height/scaleFactor);
 
 			ctx.font = '23px Helvetica';
-			drawSimpleButton('Share to Explore', sharePackToExplore, 188, 85, 200, 30, 3, '#ffffff', '#00a0ff', '#40a0ff', '#40a0ff', {alt:'Share levelpack to exlore'});
+			drawSimpleButton(t('shareToExplore'), sharePackToExplore, 188, 85, 200, 30, 3, '#ffffff', '#00a0ff', '#40a0ff', '#40a0ff', {alt:t('altShareLevelpackToExplore')});
 			// ctx.drawImage(svgMyLevelsIcons[3], 188, 85);
 
 			if (levelpackCreatorRemovingLevels) {
@@ -10409,7 +10503,7 @@ function draw() {
 				ctx.textAlign = 'right';
 				ctx.textBaseline = 'top';
 				ctx.fillStyle = '#ffffff';
-				ctx.fillText('click the trash can to exit delete mode', cwidth-28, 85);
+				ctx.fillText(t('clickTrashToExitDelete'), cwidth-28, 85);
 			}
 
 
@@ -10464,7 +10558,7 @@ function draw() {
 					ctx.font = '20px Helvetica';
 					ctx.textBaseline = 'top';
 					ctx.textAlign = 'left';
-					ctx.fillText("Levelpack description:", (cwidth - lcPopUpW) / 2 + 10, (cheight - lcPopUpH) / 2 + 5);
+					ctx.fillText(t('levelpackDescriptionLabel'), (cwidth - lcPopUpW) / 2 + 10, (cheight - lcPopUpH) / 2 + 5);
 					textBoxes[0][1].x = (cwidth - lcPopUpW) / 2 + 10;
 					textBoxes[0][1].y = (cheight - lcPopUpH) / 2 + 30;
 					textBoxes[0][1].w = lcPopUpW - 30;
@@ -10473,7 +10567,7 @@ function draw() {
 					lcSavedLevelpacks['l' + lcCurrentSavedLevelpack].description = textBoxes[0][1].text;
 
 					ctx.font = '18px Helvetica';
-					drawSimpleButton('Done', closeLevelpackDescriptionDialog, (cwidth - lcPopUpW) / 2 + 10, (cheight + lcPopUpH) / 2 - 40, 60, 30, 3, '#ffffff', '#00a0ff', '#40a0ff', '#40a0ff', {isOnPopUp:true});
+					drawSimpleButton(t('done'), closeLevelpackDescriptionDialog, (cwidth - lcPopUpW) / 2 + 10, (cheight + lcPopUpH) / 2 - 40, 60, 30, 3, '#ffffff', '#00a0ff', '#40a0ff', '#40a0ff', {isOnPopUp:true});
 				} else if (lcPopUpType == 2) {
 					let lcPopUpW = 400;
 					let lcPopUpH = 150;
