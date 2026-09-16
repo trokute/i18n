@@ -1,4 +1,37 @@
 [
-	{"code": "en-us", "name": "English (US)", "author": "5b"},
-	{"code": "id", "name": "Indonesia (WIP)", "author": "trokute"}
+	{
+		"code": "en-us",
+		"name": "English (US)",
+		"author": "trokute"
+	},
+	{
+		"code": "id",
+		"name": "Bahasa Indonesia",
+		"author": "trokute"
+	},
+	{
+		"code": "es",
+		"name": "Espanol",
+		"author": "trokute"
+	},
+	{
+		"code": "zh",
+		"name": "Zhongwen",
+		"author": "trokute"
+	},
+	{
+		"code": "ru",
+		"name": "Russkiy",
+		"author": "trokute"
+	},
+	{
+		"code": "ar",
+		"name": "Al-Arabiya",
+		"author": "trokute"
+	},
+	{
+		"code": "ja",
+		"name": "Nihongo",
+		"author": "trokute"
+	}
 ]
