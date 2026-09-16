@@ -159,6 +159,7 @@ async function switchLanguage(lang) {
 	let levelsPath = await getLocalizedLevelsPath();
 	let req = await fetch(levelsPath);
 	levelsString = await req.text();
+	loadLevels();
 }
 
 const difficultyMap = [
