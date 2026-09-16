@@ -1997,7 +1997,7 @@ let selectedBg = 0;
 let tabNames = [t('tabLevelInfo'), t('tabCharactersObjects'), t('tabTiles'), t('tabBackground'), t('tabDialogue'), t('tabOptions')];
 let charInfoHeight = 40;
 let diaInfoHeight = 20;
-const charStateNames = ['', 'Dead', 'Being Recovered', 'Deadly & Moving', 'Moving', 'Deadly', 'Carryable', '', 'Non-Playable Character', 'Rescuable', 'Playable Character'];
+let charStateKeys = ['', 'stateDead', 'stateBeingRecovered', 'stateDeadlyAndMoving', 'stateMoving', 'stateDeadly', 'stateCarryable', '', 'stateNonPlayableCharacter', 'stateRescuable', 'statePlayableCharacter'];
 const charStateNamesShort = ['', 'D', 'BR', 'D&M', 'M', 'D', 'C', '', 'NPC', 'R', 'P'];
 const toolNames = ['Draw Tool', 'Eraser Tool', 'Fill Rectangle Tool', 'Fill Tool', 'Eyedropper Tool', 'Selection Tool', 'Row Tool', 'Column Tool', '', 'Copy', 'Undo / Redo', 'Clear'];
 const tileNames = ['Air','Red Ground Block','Downward Facing Gray Spikes','Upward Facing Gray Spikes','Right Facing Gray Spikes','Left Facing Gray Spikes','End Gate','"E" Tree','Dialogue Starter','Red Background Block','Green Ground Block','Green Background Block','Win Token','Spring Block','Left Conveyer','Heater','Right Conveyer','Gray Spike Ball','Upward One-Way Platform','Downward Facing Black Spikes','Upward Facing Black Spikes','Right Facing Black Spikes','Left Facing Black Spikes','Downward Facing Black Spikes with Support Cable','Vertical Support Cable','Vertical Support Cable Connected Right','Horizontal Support Cable','Top Left Support Cable Connector','Horizontal Support Cable Connected Down','Horizontal Support Cable Connected Up','Vertical Support Cable Connected Left','Yellow Switch Block Solid','Dark Yellow Switch Block Solid','Yellow Switch Block Passable','Dark Yellow Switch Block Passable','Yellow Lever Facing Left','Yellow Lever Facing Right','Blue Lever Facing Left','Blue Lever Facing Right','Green Background Block with Upward One-Way Platform','Yellow Button','Blue Button','Gray Grass','Gray Dirt','Right Facing One-Way Platform','Two-Way Gray Spikes Top Left','Two-Way Gray Spikes Top Right','Crumbling Rock','Conglomerate-Like Background Block','Lamp','Gray Gems','Blue Switch Block Solid','Dark Blue Switch Block Solid','Blue Switch Block Passable','Dark Blue Switch Block Passable','Conglomerate-Like Background Block with Upward One-Way Platform','Gray Block','Green Lever Facing Left','Green Lever Facing Right','"V" Tree','Dark Green Switch Block Solid','Green Switch Block Passable','Dark Green Switch Block Passable','Green Switch Platform Up Solid','Green Switch Platform Up Passable','Green Switch Block Solid','Spotlight','Black Block','Left Facing One-Way Platform','Downward One-Way Platform','Green Background Block with Left Facing One-Way Platform','Green Button','Black Spike Ball','Purple Ground Block','"Wind Gust" Block','Vertical Electric Barrier','Horiontal Electric Barrier','Purple Background Block','Yellow Switch Spike Ball Passable','Yellow Switch Spike Ball Solid','"I" Tree','Yellow Switch Platform Up Solid','Yellow Switch Platform Up Passable','One-Way Conveyer Left','One-Way Conveyer Left (not moving)','One-Way Conveyer Right','One-Way Conveyer Right (not moving)','Purple Background Block Slanted Bottom Left','Purple Background Block Slanted Bottom Right','Light Gray Vertical Support Cable','Light Gray Horizontal Support Cable','Light Gray Horizontal Support Cable Connected Down','Light Gray Horizontal Support Cable Connected Up','Wood Block','Wood Background Block','Danger Zone Background Block','Purple Background Block Slanted Top Right','Purple Background Block Slanted Top Left','Gray Metal Ground Block','Wooden Background Block... again?','Acid','Acid Glow','Yellow Metal Ground Block','Lava','Lava Glow','Red Metal Ground Block','Yellow Metal Background Block','Dark Gray Metal Ground Block','Conveyer Lever Facing Left','Conveyer Lever Facing Right','Picture','','','','','','','','','','','','','','','','','','','','Water','Brick Ground Block','Wall of Text','Blue Switch Platform Up Solid','Blue Switch Platform Up Passable'];
@@ -2081,7 +2081,7 @@ let exploreDescLine = 0;
 let previousMenuExplore = 0;
 let exploreUser;
 let exploreUserPageNumbers = [];
-let exploreSortText = ['new','trending','plays','old'];
+let exploreSortKeys = ['sortNew','sortTrending','sortPlays','sortOld'];
 let exploreSortTextWidth = 160;
 let loggedInExploreUser5beamID = -1; // Temporarily just being used for checking if the user is logged in.
 let exploreLevelTitlesTruncated = new Array(8);
@@ -8783,8 +8783,8 @@ function draw() {
 							ctx.font = textSize + 'px Helvetica';
 							ctx.fillStyle = '#000000';
 							let j = 0;
-							for (let i = 3; i < charStateNames.length; i++) {
-								if (charStateNames[i] != '') {
+							for (let i = 3; i < charStateKeys.length; i++) {
+								if (charStateKeys[i] != '') {
 									if (
 										mouseOnTabWindow &&
 										!lcPopUp &&
@@ -8811,7 +8811,7 @@ function draw() {
 										}
 									}
 									ctx.fillText(
-										charStateNames[i],
+										t(charStateKeys[i]),
 										665 + 240 - 1,
 										charDropdownY + charInfoHeight + j * textSize
 									);
@@ -9282,14 +9282,14 @@ function draw() {
 					// if (enableExperimentalFeatures) {
 					let isNew = lcCurrentSavedLevel==-1;
 					if (!isNew) ctx.font = '18px Helvetica';
-					drawSimpleButton(isNew?'Save Level':'Save Changes', saveLevelCreator, 675, tabWindowY + 90, 130, 30, isNew?3:5, '#ffffff', '#404040', '#666666', '#555555', {enabled:lcChangesMade});
+					drawSimpleButton(isNew?t('saveLevel'):t('saveChanges'), saveLevelCreator, 675, tabWindowY + 90, 130, 30, isNew?3:5, '#ffffff', '#404040', '#666666', '#555555', {enabled:lcChangesMade});
 					ctx.font = '23px Helvetica';
 					drawSimpleButton(t('saveCopy'), saveLevelCreatorCopy, 815, tabWindowY + 90, 130, 30, 3, '#ffffff', '#404040', '#666666', '#555555', {enabled:!isNew});
 					drawSimpleButton(t('newBlankLevel'), resetLevelCreatorChoice, 675, tabWindowY + 130, 270, 30, 3, '#ffffff', '#404040', '#666666', '#555555');
 					drawSimpleButton(t('myLevels'), menuMyLevels, 675, tabWindowY + 170, 270, 30, 3, '#ffffff', '#404040', '#666666', '#555555');
 					// }
 
-					drawSimpleButton(loggedInExploreUser5beamID ? 'Share to Explore' : 'Share to Explore as Guest', shareToExplore, 675, tabWindowY + 210, 270, 30, 3, '#ffffff', '#404040', '#666666', '#555555');
+					drawSimpleButton(loggedInExploreUser5beamID ? t('shareToExplore') : t('shareToExploreAsGuest'), shareToExplore, 675, tabWindowY + 210, 270, 30, 3, '#ffffff', '#404040', '#666666', '#555555');
 					drawMenu0Button(t('exit'), 846, cheight - 50, false, menuExitLevelCreator, 100);
 					// drawMenu2_3Button(0, 837.5, 486.95, menuExitLevelCreator);
 					break;
@@ -9612,7 +9612,7 @@ function draw() {
 					ctx.textBaseline = 'top';
 					ctx.textAlign = 'left';
 					wrapText(
-						`You have unsaved changes. Are you sure you want to ${lcPopUpType == 1 ? "exit" : "reset"} the level creator and discard all unsaved changes?`,
+						lcPopUpType == 1 ? t('unsavedChangesExitConfirm') : t('unsavedChangesResetConfirm'),
 						(cwidth - lcPopUpW) / 2 + 10,
 						(cheight - lcPopUpH) / 2 + 5,
 						lcPopUpW - 20,
@@ -9788,7 +9788,7 @@ function draw() {
 					ctx.fillStyle = '#404040';
 					onButton = true;
 					if (mouseIsDown && !pmouseIsDown) {
-						exploreSort = (exploreSort + 1) % (exploreSortText.length - Number(exploreTab!=0));
+						exploreSort = (exploreSort + 1) % (exploreSortKeys.length - Number(exploreTab!=0));
 						setExplorePage(1);
 					}
 				} else ctx.fillStyle = '#333333';
@@ -9848,7 +9848,7 @@ function draw() {
 				ctx.fillStyle = '#ffffff';
 				ctx.font = '24px Helvetica';
 
-				let sortingText = exploreSortText[exploreSort][0].toLocaleUpperCase() + exploreSortText[exploreSort].slice(1)
+				let sortingText = t(exploreSortKeys[exploreSort]);
 				ctx.fillText(sortingText, 650, 88);
 				ctx.fillText(t('playTheDaily'), 992-exploreSortTextWidth + 5, 88);
 			}
@@ -9856,7 +9856,7 @@ function draw() {
 			ctx.fillStyle = '#ffffff';
 			ctx.textAlign = 'center';
 			ctx.font = '30px Helvetica';
-			ctx.fillText(randomMode ? "random" : explorePage, cwidth / 2, 490);
+			ctx.fillText(randomMode ? t('random') : explorePage, cwidth / 2, 490);
 
 			// Previous page button
 			if (explorePage <= 1 || exploreLoading) ctx.fillStyle = '#505050';
@@ -9979,7 +9979,7 @@ function draw() {
 				ctx.textAlign = 'right';
 
 				let pluralPlayText = exploreLevelPageLevel.plays === 1
-				ctx.fillText(exploreLevelPageLevel.plays + (pluralPlayText ? ' play' : ' plays'), 410, 325);
+				ctx.fillText(exploreLevelPageLevel.plays + ' ' + (pluralPlayText ? t('playSingular') : t('playPlural')), 410, 325);
 				ctx.textAlign = 'left';
 
 				// Stars counter
@@ -9988,7 +9988,7 @@ function draw() {
 				ctx.textAlign = 'right';
 
 				let pluralStarText = exploreLevelPageLevel.stars === 1
-				ctx.fillText(exploreLevelPageLevel.stars + (pluralStarText ? ' star' : ' stars'), 410, 352);
+				ctx.fillText(exploreLevelPageLevel.stars + ' ' + (pluralStarText ? t('starSingular') : t('starPlural')), 410, 352);
 				ctx.textAlign = 'left';
 
 				// Difficulty in levelpacks arent supported yet
@@ -10205,7 +10205,15 @@ function draw() {
 						thisOptionValue = slowTintsEnabled;
 				}
 				ctx.fillStyle = thisOptionValue?'#00ff00':'#ff0000';
-				ctx.fillText(thisOptionValue?t('on'):t('off'), 615, y+2);
+				let onOffText = thisOptionValue?t('on'):t('off');
+				let onOffSize = 22;
+				ctx.font = onOffSize + 'px Helvetica';
+				while (ctx.measureText(onOffText).width > 42 && onOffSize > 8) {
+					onOffSize--;
+					ctx.font = onOffSize + 'px Helvetica';
+				}
+				ctx.fillText(onOffText, 615, y+2+(26-onOffSize)/2);
+				ctx.font = '26px Helvetica';
 
 				if (onRect(_xmouse, _ymouse, 590, y, 50, 28)) {
 					onButton = true;
@@ -10393,7 +10401,7 @@ function draw() {
 						ctx.textBaseline = 'top';
 						ctx.textAlign = 'left';
 						wrapText(
-							`The level you were editing had unsaved changes. Are you sure you want to open this level in the level creator and discard all unsaved changes?`,
+							t('unsavedChangesOpenConfirm'),
 							(cwidth - lcPopUpW) / 2 + 10,
 							(cheight - lcPopUpH) / 2 + 5,
 							lcPopUpW - 20,
@@ -10580,7 +10588,7 @@ function draw() {
 						ctx.textBaseline = 'top';
 						ctx.textAlign = 'left';
 						wrapText(
-							`The level you were editing had unsaved changes. Are you sure you want to open this level in the level creator and discard all unsaved changes?`,
+							t('unsavedChangesOpenConfirm'),
 							(cwidth - lcPopUpW) / 2 + 10,
 							(cheight - lcPopUpH) / 2 + 5,
 							lcPopUpW - 20,
